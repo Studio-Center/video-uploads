@@ -94,47 +94,52 @@ locations = [
   "Telly Winners/2014"
 ]
 
-Shoes.app(title: "Studio Center Video Uploader", width: 200, height: 240) do
-  stack {
-    para "Upload Sub Directory"
-    @upload_location = list_box :items => locations
-    button("Select File to Upload") do
-      @filename = ask_open_file
-      @sel_fil_op.text = @filename
-    end
-    @sel_fil_op = para $filename;
-    button("Upload Selected") do
-      if @upload_location.text && @filename
-        servers.each do |server|
-          lfile = @filename
-          # access remote dir via FTP
-          begin
-            ftpCon = Net::FTP.new
-            ftpCon.passive = true
-            ftpCon.open_timeout = 2
-            ftpCon.connect(server)
-            ftpCon.login(user, password)
-            filesize = File.size(@filename)
-            transferred = 0
-            ftpCon.chdir("/Public/Shared Videos/" + @upload_location.text + "/")
-            ftpCon.putbinaryfile(lfile) { |data|
-              transferred += data.size
-              percent_finished = (((transferred).to_f/filesize.to_f)*100) / 100.0
-              animate do
-                @p.fraction = percent_finished
-              end
-            }
-            ftpCon.close
-            @status_op.text += server + " uploaded successfully" + "\n"
-          rescue => e
-            @status_op.text += server + " upload failed " + e.message + "\n"
-          ensure
-            # ftpCon.close
+Shoes.app(title: "Studio Center Video Uploader", width: 500, height: 240) do
+  flow do
+    stack width: 200 do
+      para "Upload Sub Directory"
+      @upload_location = list_box :items => locations
+      button("Select File to Upload") do
+        @filename = ask_open_file
+        @sel_fil_op.text = @filename
+      end
+      @sel_fil_op = para $filename;
+      button("Upload Selected") do
+        if @upload_location.text && @filename
+          servers.each do |server|
+            lfile = @filename
+            # access remote dir via FTP
+            begin
+              ftpCon = Net::FTP.new
+              ftpCon.passive = true
+              ftpCon.open_timeout = 2
+              ftpCon.connect(server)
+              ftpCon.login(user, password)
+              filesize = File.size(@filename)
+              transferred = 0
+              @p = 0
+              ftpCon.chdir("/Public/Shared Videos/" + @upload_location.text + "/")
+              ftpCon.putbinaryfile(lfile) { |data|
+                transferred += data.size
+                percent_finished = (((transferred).to_f/filesize.to_f)*100) / 100.0
+                animate do
+                  @p.fraction = percent_finished
+                end
+              }
+              ftpCon.close
+              @status_op.text += server + " uploaded successfully" + "\n"
+            rescue => e
+              @status_op.text += server + " upload failed " + e.message + "\n"
+            ensure
+              # ftpCon.close
+            end
           end
         end
       end
     end
-    @p = progress width: 1.0
-    @status_op = para ""
-  }
+    stack width: 300 do
+      @p = progress width: 1.0
+      @status_op = para ""
+    end
+  end
 end
