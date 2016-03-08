@@ -114,10 +114,10 @@ Shoes.app(title: "Studio Center Video Uploader", width: 200, height: 240) do
             ftpCon.open_timeout = 2
             ftpCon.connect(server)
             ftpCon.login(user, password)
-            filesize = ftp.size(@filename)
+            filesize = File.size(@filename)
             transferred = 0
             ftpCon.chdir("/Public/Shared Videos/" + @upload_location.text + "/")
-            ftpCon.putbinaryfile(lfile, "#{SOURCE_IMPORT_DIRECTORY}/#{filename}", 1024) { |data|
+            ftpCon.putbinaryfile(lfile) { |data|
               transferred += data.size
               percent_finished = (((transferred).to_f/filesize.to_f)*100) / 100.0
               animate do
@@ -128,9 +128,8 @@ Shoes.app(title: "Studio Center Video Uploader", width: 200, height: 240) do
             @status_op.text += server + " uploaded successfully" + "\n"
           rescue => e
             @status_op.text += server + " upload failed " + e.message + "\n"
-            #@status_op.text += ("FTP Error: #{server}: #{e.message}\n#{e.backtrace.join("\n")} -> #{e.inspect}")
           ensure
-            # ftp.close
+            # ftpCon.close
           end
         end
       end
