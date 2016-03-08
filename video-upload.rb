@@ -1,9 +1,14 @@
+require_relative "vars"
+
 Shoes.app :title => "Studio Center Video Uploader" do
   stack {
-    para "Upload Location"
-    list_box :items => ["Public/Shared", "Videos/Archive"]
     para "Upload Sub Directory"
-    list_box :items => ["populate later"]
+    @upload_location = list_box :items => locations
+    button("Select File to Upload") {
+      @filename = ask_open_file
+      #para File.read(filename)
+      para @filename
+    }
     button("Upload Selected") { alert("Good job.") }
   }
 end
