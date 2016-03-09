@@ -2,10 +2,10 @@ require "net/ftp"
 
 # available servers
 servers = [
-  "192.168.1.21",
-  "192.168.2.21",
-  "192.168.3.21",
-  "192.198.7.21",
+  "WDMyCloud161.sc.studiocenter.com",
+  "WDMyCloud240.sc.studiocenter.com",
+  "WDMyCloudRVA.sc.studiocenter.com",
+  "WDMyCloudDC.sc.studiocenter.com",
 ]
 
 # default share credentials
@@ -93,62 +93,81 @@ locations = [
   "Telly Winners/2014"
 ]
 
-uploads = 0
-
-Shoes.app(title: "Studio Center Video Uploader", width: 500, height: 240, resizable: false) do
+Shoes.app(title: "Studio Center Video Uploader", width: 900, height: 1000, resizable: false) do
+  $stdout.sync = true
   flow do
+    locsHalf = locations.length.to_i / 2
+    selLoc = []
+    stack width: 200 do
+      para "Select directories"
+      locations[0...locsHalf].map do |loc|
+        flow { @upload_location = check; para loc, :size => 10}
+        selLoc << [@upload_location, loc]
+      end
+    end
+    stack width: 200 do
+      para " "
+      locations[locsHalf..locations.length].map do |loc|
+        flow { @upload_location = check; para loc, :size => 10}
+        selLoc << [@upload_location, loc]
+      end
+    end
     stack width: 200 do
       para "Upload Sub Directory"
-      @upload_location = list_box :items => locations
       button("Select File to Upload") do
         @filename = ask_open_file
         @sel_fil_op.text = @filename
       end
       @sel_fil_op = para $filename;
       button("Upload Selected") do
-        if @upload_location.text && @filename
+        selected = selLoc.map { |upload_location, name| name if upload_location.checked? }.compact
+        if selected && @filename
           servers.each do |server|
-            # cnt total uploads
-            uploads += 1
-            lfile = @filename
-            # access remote dir via FTP
-            begin
-              # set per xfer vars
-              filesize = File.size(@filename)
-              transferred = 0
-              @p.fraction = 0.0
-              # connect and xfer
-              ftpCon = Net::FTP.new
-              ftpCon.passive = true
-              ftpCon.open_timeout = 2
-              # connect
-              ftpCon.connect(server)
-              ftpCon.login(user, password)
-              ftpCon.chdir("/Public/Shared Videos/" + @upload_location.text + "/")
-              # return upload status
-              ftpCon.putbinaryfile(lfile) { |data|
-                transferred += data.size
-                percent_finished = (((transferred).to_f/filesize.to_f)*100) / 100.0
-                animate do
-                  @p.fraction = percent_finished
+            selected.each do |sel_loc|
+              lfile = @filename
+              # cnt total uploads
+              Thread.new do
+                # access remote dir via FTP
+                begin
+                  # set per xfer vars
+                  filesize = File.size(lfile)
+                  transferred = 0
+                  @p.fraction = 0.0
+                  # connect and xfer
+                  ftpCon = Net::FTP.new
+                  ftpCon.passive = true
+                  ftpCon.open_timeout = 2
+                  # connect
+                  ftpCon.connect(server)
+                  ftpCon.login(user, password)
+                  ftpCon.chdir("/Public/Shared Videos/" + sel_loc + "/")
+                  # return upload status
+                  ftpCon.putbinaryfile(lfile) { |data|
+                    transferred += data.size
+                    percent_finished = (((transferred).to_f/filesize.to_f)*100) / 100.0
+                    animate do
+                      @p.fraction = percent_finished
+                    end
+                  }
+                  ftpCon.close
+                  @status_op.text += server + " uploaded to " + sel_loc + " successfully" + "\n"
+                rescue => e
+                  @status_op.text += server + " upload to " + sel_loc + " failed " + e.message + "\n"
+                ensure
+                  # ftpCon.close
                 end
-              }
-              ftpCon.close
-              @status_op.text += uploads.to_s + ". " + server + " uploaded successfully" + "\n"
-            rescue => e
-              @status_op.text += uploads.to_s + ". " + server + " upload failed " + e.message + "\n"
-            ensure
-              # ftpCon.close
+              end
             end
           end
         else
-          alert "Please select a file to upload!"
+          alert "Please select a file and directory to upload!"
         end
       end
     end
     # display upload ds
     stack width: 300 do
       border black
+      para "Upload Progress"
       @p = progress width: 1.0
       @status_op = para ""
     end
