@@ -15,7 +15,6 @@ password = "TransferNow"
 # u: file
 # p: TransferNow
 
-
 # build category list
 categories = [
   "Automotive",
@@ -94,7 +93,7 @@ locations = [
   "Telly Winners/2014"
 ]
 
-Shoes.app(title: "Studio Center Video Uploader", width: 500, height: 240) do
+Shoes.app(title: "Studio Center Video Uploader", width: 500, height: 240, resizable: false) do
   flow do
     stack width: 200 do
       para "Upload Sub Directory"
@@ -134,6 +133,8 @@ Shoes.app(title: "Studio Center Video Uploader", width: 500, height: 240) do
               # ftpCon.close
             end
           end
+        else
+          alert "Please select a file to upload!"
         end
       end
     end
