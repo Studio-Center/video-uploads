@@ -148,16 +148,13 @@ Shoes.app(title: "Studio Center Video Uploader", width: 900, height: 1000, resiz
                     @p[curIdx] = progress(width: 1.0)
                   end
                   ftpCon.putbinaryfile(lfile) { |data|
-                    transferred += data.size
-                    percent_finished = (((transferred).to_f/filesize.to_f)*100) / 100.0
-                    #animate do
+                    Thread.new do
+                      transferred += data.size
+                      percent_finished = (((transferred).to_f/filesize.to_f)*100) / 100.0
                       @p[curIdx].fraction = percent_finished
-                    #end
+                    end
                   }
                   ftpCon.close
-                  @status_stack.append do
-                    para server + " uploaded to " + sel_loc + " successfully", :size => 10
-                  end
                 rescue => e
                   @status_stack.append do
                     para server + " upload to " + sel_loc + " failed " + e.message, :size => 10
