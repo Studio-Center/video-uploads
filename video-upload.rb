@@ -120,39 +120,48 @@ Shoes.app(title: "Studio Center Video Uploader", width: 900, height: 1000, resiz
       end
       @sel_fil_op = para $filename;
       button("Upload Selected") do
+        @curIdx = 0
+        @p = []
         selected = selLoc.map { |upload_location, name| name if upload_location.checked? }.compact
         if selected && @filename
           servers.each do |server|
             selected.each do |sel_loc|
               lfile = @filename
               # cnt total uploads
-              Thread.new do
+              Thread.new(curIdx = @curIdx += 1) do
                 # access remote dir via FTP
                 begin
                   # set per xfer vars
                   filesize = File.size(lfile)
                   transferred = 0
-                  @p.fraction = 0.0
                   # connect and xfer
                   ftpCon = Net::FTP.new
                   ftpCon.passive = true
-                  ftpCon.open_timeout = 2
+                  ftpCon.open_timeout = 4
                   # connect
                   ftpCon.connect(server)
                   ftpCon.login(user, password)
                   ftpCon.chdir("/Public/Shared Videos/" + sel_loc + "/")
                   # return upload status
+                  @status_stack.append do
+                    para server + " uploading to " + sel_loc, :size => 10
+                    @p[curIdx] = progress(width: 1.0)
+                  end
                   ftpCon.putbinaryfile(lfile) { |data|
                     transferred += data.size
                     percent_finished = (((transferred).to_f/filesize.to_f)*100) / 100.0
-                    animate do
-                      @p.fraction = percent_finished
-                    end
+                    #animate do
+                      @p[curIdx].fraction = percent_finished
+                    #end
                   }
                   ftpCon.close
-                  @status_op.text += server + " uploaded to " + sel_loc + " successfully" + "\n"
+                  @status_stack.append do
+                    para server + " uploaded to " + sel_loc + " successfully", :size => 10
+                  end
                 rescue => e
-                  @status_op.text += server + " upload to " + sel_loc + " failed " + e.message + "\n"
+                  @status_stack.append do
+                    para server + " upload to " + sel_loc + " failed " + e.message, :size => 10
+                  end
                 ensure
                   # ftpCon.close
                 end
@@ -165,11 +174,9 @@ Shoes.app(title: "Studio Center Video Uploader", width: 900, height: 1000, resiz
       end
     end
     # display upload ds
-    stack width: 300 do
+    @status_stack = stack width: 300 do
       border black
       para "Upload Progress"
-      @p = progress width: 1.0
-      @status_op = para ""
     end
   end
 end
