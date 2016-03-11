@@ -124,7 +124,9 @@ Shoes.app(title: "Studio Center Video Uploader", width: 900, height: 1000, resiz
         @p = []
         selected = selLoc.map { |upload_location, name| name if upload_location.checked? }.compact
         if selected && @filename
+          # walk through all assigned servers
           servers.each do |server|
+            # walk through all selected locations
             selected.each do |sel_loc|
               lfile = @filename
               # cnt total uploads
